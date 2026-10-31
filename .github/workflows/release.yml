@@ -1,0 +1,35 @@
+name: Release checks
+
+# Runs when a GitHub release is published. Nothing happens on a plain push or
+# tag, so cutting a tag stays reversible right up until the release is.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - run: uv lock --check
+      - run: uv sync --frozen --all-groups
+
+      # The page shows the version from pyproject.toml, so a tag that disagrees
+      # would have bug reports naming a release that does not match the code.
+      - name: The tag matches the version
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(uv run --frozen python -c 'import sim; print(sim.VERSION)')"
+          test "$TAG" = "v$version" || { echo "Tag $TAG does not match version $version"; exit 1; }
+
+      - run: uv run --frozen pytest -q
+      - run: uv run --frozen ruff check --output-format=github .

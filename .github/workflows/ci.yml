@@ -39,5 +39,6 @@ jobs:
         uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
+      - run: uv lock --check
       - run: uv sync --frozen --all-groups
       - run: uv run --frozen ruff check --output-format=github .

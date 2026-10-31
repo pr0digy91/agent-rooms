@@ -76,6 +76,45 @@ Match what is already there.
 - **Keep it easy to run.** New dependencies should earn their place in the PR
   description.
 
+## Versioning
+
+There is one version number, in `pyproject.toml`. The page reads it from there.
+
+- **Patch** (0.1.1): fixes, with nothing a user has to do.
+- **Minor** (0.2.0): new features, or anything that needs action on upgrade.
+- **1.0.0** is a promise that every later version opens an existing
+  `agent_rooms.db`. Until then the schema is still moving, though a release should
+  still migrate old data rather than drop it.
+
+## Releasing
+
+1. Bump the version in `pyproject.toml`, then run `uv lock`.
+2. Commit only that, as `Version 0.2.0`. The body says why this is a patch or a
+   minor, and what changed.
+3. Wait for CI to pass on that commit, then tag it. The tag message is one line:
+
+   ```sh
+   git tag -a v0.2.0 -m "Saved conversations can be renamed"
+   git push origin v0.2.0
+   ```
+
+4. Publish a GitHub release from the tag, named after it:
+
+   ```sh
+   gh release create v0.2.0 --verify-tag --title v0.2.0 --notes-file notes.md
+   ```
+
+Tagging can be undone right up to step 4. Publishing is the moment users see it.
+
+The notes open with **what happens to existing data**, because that is the first
+thing anyone upgrading needs to know, for example "Your saved characters and
+conversations are unaffected." Then give each change a heading that states what
+now happens, and a short paragraph on what was wrong before. Call out anything
+that adds model or voice calls.
+
+Publishing runs `.github/workflows/release.yml`, which checks that the tag matches
+the version and runs the tests and lint on the tagged commit.
+
 ## Pull requests
 
 Keep each PR to one change. Describe what you tested by hand, since the suite

@@ -394,7 +394,7 @@ def pick_speaker(mode: str, cast: list[Character], history: list[Message], confi
         "next so the conversation flows naturally (e.g. someone addressed, someone "
         "with a strong reaction). Answer with ONLY one name from the list.",
         f"Candidates: {', '.join(c.name for c in candidates)}\n"
-        "If the last message is clearly directed at one candidate, pick that one.\n\nTranscript:\n{_lines(history[-20:])}",
+        f"If the last message is clearly directed at one candidate, pick that one.\n\nTranscript:\n{_lines(history[-20:])}",
         config,
     )
     for c in candidates:

@@ -6,6 +6,8 @@
 
 A Streamlit app where AI characters live in customizable rooms and talk to each other, and to you. Built on [AG2](https://github.com/ag2ai/ag2) and xAI Grok, with voice in and out.
 
+**Bring your own key:** you need your own [xAI API key](https://console.x.ai) to run it.
+
 ## Features
 
 - **Characters**: give each one a persona, a behaviour and a voice.
@@ -20,19 +22,52 @@ A Streamlit app where AI characters live in customizable rooms and talk to each 
 - **Dark and light themes**.
 - **Everything persists** in SQLite: characters, rooms, your player, settings and conversations.
 
-## Setup
+## Requirements
 
-Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/).
+- Python 3.13+ and [uv](https://docs.astral.sh/uv/)
+- **Your own xAI (Grok) API key**: nothing runs without one, see below
+- A modern browser. Voice works best in Chrome or Edge, and choosing your headphones needs one of those two
+
+## Bring your own key (BYOK)
+
+Agent Rooms does not include an API key or a hosted service. It runs on your machine, calls xAI directly with your key, and every call is billed to your xAI account.
+
+1. Sign in to the [xAI console](https://console.x.ai) and set up billing or credits.
+2. Create an API key.
+3. Put it in `.env` as `XAI_API_KEY` (see [Setup](#setup)).
+
+**What the key is used for.** If you restrict the key's permissions in the console, it needs access to these:
+
+| Feature | xAI service | Needed |
+|---|---|---|
+| Character replies, Director, memory, delivery planning | Chat, using the model in `XAI_MODEL` | Always |
+| Spoken replies | Text to speech (`/v1/tts`) | When **Speak replies aloud** is on |
+| Mic input | Speech to text (`/v1/stt`), using `XAI_STT_MODEL` | When you use the mic |
+
+**Without a key,** the app still opens and you can edit characters and rooms, but pressing **Next** shows `XAI_API_KEY is not set`. Restart Streamlit after adding or changing the key.
+
+**What costs money.** Each turn makes one model call for the reply, and these options add to it:
+
+| Option | Extra calls |
+|---|---|
+| Director | One model call per turn to choose the speaker, unless you address someone by name |
+| Memory | Up to one model call per turn for private notes, plus an occasional summary |
+| Speak replies aloud | One text-to-speech call per line |
+| Expressive delivery | One model call per spoken line |
+| Everyone reacts (manifestation) | A full turn for each character in the room |
+
+To keep costs down, use Round robin, turn Memory off, and leave voice off.
+
+**Keeping your key safe.** The key stays in your local `.env`, which is git-ignored. It is sent only to `api.x.ai` and is not stored in the database. Never commit it or paste it into an issue, and rotate it in the console if it may have leaked. Anyone who can open your running app can spend your credit, so see [SECURITY.md](SECURITY.md) before sharing it on a network.
+
+## Setup
 
 ```bash
 uv sync
-```
-
-Copy the example settings and add your key:
-
-```bash
 cp .env.example .env
 ```
+
+Then edit `.env` and add your key:
 
 ```env
 XAI_API_KEY=your-key-here
@@ -44,7 +79,7 @@ XAI_TTS_LANGUAGE=en
 XAI_DEFAULT_VOICE=eve
 ```
 
-Get a key from the [xAI console](https://console.x.ai). `.env` is git-ignored; never commit it.
+`XAI_MODEL` can be any xAI chat model your key has access to.
 
 ## Run
 
@@ -64,7 +99,7 @@ The app has no login, and Streamlit listens on your local network by default. To
 4. Turn on **Speak replies aloud** under **Options** for voiced replies.
 5. Use the **Manifestation box** to change the shared reality and watch the room react.
 
-Note: every turn is a model call, and memory, delivery planning, speech and reactions to a manifestation each add calls.
+Every turn is a paid model call on your key. See [What costs money](#bring-your-own-key-byok).
 
 ## Data and files
 

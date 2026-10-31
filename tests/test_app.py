@@ -134,6 +134,20 @@ def test_banishing_shows_a_vanished_card(app):
     assert not any(b.key == "banish_0" for b in app.button)
 
 
+def test_the_empty_chat_hint_goes_when_the_first_turn_starts(app, monkeypatch):
+    def turn(room, cast, convo, *args, **kwargs):
+        convo.history.append(sim.Message(cast[0].name, "Hold steady."))
+        return convo.history[-1]
+
+    monkeypatch.setattr(sim, "make_config", lambda: None)
+    monkeypatch.setattr(sim, "next_turn", turn)
+    assert any("No messages yet" in m.value for m in app.markdown)
+    button(app, "Next").click().run()
+    assert not app.exception
+    assert any(m.value == "Hold steady." for m in app.markdown)
+    assert not any("No messages yet" in m.value for m in app.markdown)
+
+
 def test_a_manifest_name_is_escaped(app):
     manifest(app, "<script>x</script>")
     assert not any("<script>x" in m.value for m in app.markdown)

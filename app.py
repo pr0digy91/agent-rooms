@@ -310,16 +310,17 @@ with tab_sim:
                     slot.audio(mp3, format="audio/mpeg")
             return slot
 
+        hint = box.empty()  # always takes a slot, so a message never lands where the hint pushed the last one
         if not convo.history:
-            with box:
-                st.markdown('<div class="scene-card" style="margin:1rem">No messages yet. Press <b>Next</b> '
-                            "to let the characters start, or say something below.</div>", unsafe_allow_html=True)
+            hint.markdown('<div class="scene-card" style="margin:1rem">No messages yet. Press <b>Next</b> '
+                          "to let the characters start, or say something below.</div>", unsafe_allow_html=True)
         for i, m in enumerate(convo.history):
             show(m, clips.get(i))
 
         if steps and len(cast) < 2:
             st.warning("Pick at least two characters.")
         elif steps:
+            hint.empty()
             convo.room, convo.cast = room.name, names
             by_name = {c.name: c for c in state.characters}
             try:

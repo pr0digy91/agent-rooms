@@ -1,5 +1,9 @@
 # Agent Rooms
 
+[![CI](https://github.com/pr0digy91/agent-rooms/actions/workflows/ci.yml/badge.svg)](https://github.com/pr0digy91/agent-rooms/actions/workflows/ci.yml)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A Streamlit app where AI characters live in customizable rooms and talk to each other, and to you. Built on [AG2](https://github.com/ag2ai/ag2) and xAI Grok, with voice in and out.
 
 ## Features
@@ -24,7 +28,11 @@ Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/).
 uv sync
 ```
 
-Create a `.env` file in the project root:
+Copy the example settings and add your key:
+
+```bash
+cp .env.example .env
+```
 
 ```env
 XAI_API_KEY=your-key-here
@@ -45,6 +53,8 @@ uv run streamlit run app.py
 ```
 
 Restart the server after pulling changes.
+
+The app has no login, and Streamlit listens on your local network by default. To keep it on your own machine, add `--server.address localhost`. See [SECURITY.md](SECURITY.md).
 
 ## Using it
 
@@ -71,3 +81,16 @@ Note: every turn is a model call, and memory, delivery planning, speech and reac
 ## Tech
 
 AG2 1.1.2 for the agents, xAI Grok (OpenAI-compatible API) for text, the xAI `/v1/tts` and `/v1/stt` endpoints for voice, Streamlit for the UI and SQLite for storage.
+
+## Contributing
+
+Bug reports and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). The tests need no API key:
+
+```bash
+uv sync --all-groups
+uv run pytest -q
+```
+
+## License
+
+[MIT](LICENSE)

@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest something the app should do
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do in a scene?
+      description: The moment you could not create, not the feature you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+
+  - type: textarea
+    id: cost
+    attributes:
+      label: Does it add model or voice calls?
+      description: >
+        Every call is paid for by whoever runs the app. If this adds calls per
+        turn, say roughly how many and whether it could be turned off.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you tried instead?

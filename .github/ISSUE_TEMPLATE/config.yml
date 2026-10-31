@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security issue or leaked key
+    url: https://github.com/pr0digy91/agent-rooms/blob/main/SECURITY.md
+    about: Please read this before opening a public issue.

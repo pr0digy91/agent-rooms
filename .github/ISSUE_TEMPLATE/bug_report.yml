@@ -1,0 +1,70 @@
+name: Bug report
+description: Something doesn't work
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never paste your `XAI_API_KEY`**, your `.env`, or a log that shows
+        them. If you already did, rotate the key in the xAI console.
+
+        **After pulling changes, restart Streamlit first.** It caches imported
+        modules, so a running server can report errors from old code.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you expected, and what happened instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: From a fresh page load, if you can.
+      placeholder: |
+        1. Open the Simulation tab
+        2. Manifest an Artifact at conviction 90
+        3. Press Next
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output
+      description: The Streamlit traceback, or the browser console for audio problems.
+      render: shell
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part?
+      options:
+        - Characters or rooms
+        - Conversation and speaker selection
+        - Memory
+        - Manifestation box and conviction
+        - Voice (speech in or out)
+        - Audio devices
+        - Saving, loading or settings
+        - Look and feel
+        - Other
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      description: Audio routing and autoplay differ between browsers.
+      placeholder: "Chrome 141 on macOS 26"
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: The XAI_MODEL you use, if you changed it.
+      placeholder: "grok-4.20-0309-non-reasoning"

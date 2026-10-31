@@ -9,6 +9,7 @@ import random
 import sqlite3
 import re
 import threading
+import tomllib
 from contextlib import closing
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -18,6 +19,9 @@ from ag2.config import OpenAIConfig
 
 from voice import MAX_SPEED, MIN_SPEED, clean_delivery, speakable
 
+# One version number: pyproject.toml. The page shows it, so bug reports can name it.
+VERSION = tomllib.loads((Path(__file__).parent / "pyproject.toml").read_text())["project"]["version"]
+
 XAI_BASE_URL = "https://api.x.ai/v1"
 DB_FILE = Path(__file__).parent / "agent_rooms.db"
 STATE_FILE = Path(__file__).parent / "state.json"  # legacy, imported once
@@ -26,6 +30,8 @@ CONVO_DIR = Path(__file__).parent / "conversations"  # legacy, imported once
 RECENT_WINDOW = 12  # newest messages always kept verbatim
 SUMMARIZE_AFTER = 30  # unsummarized messages before older ones get condensed
 MIN_NEW_FOR_MEMORY = 2  # new messages a character must have missed to refresh memory
+FIRM_BELIEF = 85  # conviction at or above this is plain truth; it overrides persona and memory
+NO_BELIEF = 15  # conviction at or below this is resisted, whatever anyone says
 
 
 @dataclass
@@ -257,10 +263,19 @@ def make_config(temperature: float = 0.9):
     )
 
 
+def safe_error(e: Exception) -> str:
+    """An error as the page may show it. OpenAIConfig's repr holds the key, and a provider can echo part of one."""
+    text = f"{type(e).__name__}: {e}"
+    key = os.getenv("XAI_API_KEY")
+    if key:
+        text = text.replace(key, "***")
+    return re.sub(r"xai-[A-Za-z0-9_-]{4,}", "xai-***", text)
+
+
 def _belief_rules(world: list[Manifestation] | None) -> str:
     """Hard, last-in-prompt rules for strongly believed manifestations; they outrank persona, notes and old doubts."""
-    firm = [w for w in (world or []) if w.active and w.conviction >= 85]
-    low = [w for w in (world or []) if w.active and w.conviction <= 15]
+    firm = [w for w in (world or []) if w.active and w.conviction >= FIRM_BELIEF]
+    low = [w for w in (world or []) if w.active and w.conviction <= NO_BELIEF]
     out = ""
     if firm:
         names = ", ".join(f'"{w.name}"' for w in firm)
@@ -289,7 +304,7 @@ def _world_block(world: list[Manifestation] | None) -> str:
 
 
 def _belief(conviction: int) -> str:
-    if conviction >= 95:
+    if conviction >= FIRM_BELIEF:
         return ("everyone accepts it without doubt: it is simply true in this world, including whatever it "
                 "claims, says or shows. Earlier doubts melt away; adapt your plans and feelings to it")
     if conviction >= 70:
@@ -298,7 +313,7 @@ def _belief(conviction: int) -> str:
     if conviction >= 40:
         return ("judge it by your own character: trusting characters lean towards accepting it, suspicious "
                 "ones want proof")
-    if conviction >= 15:
+    if conviction > NO_BELIEF:
         return ("it is physically there, but you doubt what it claims, demand evidence and put your own "
                 "beliefs and instruments first")
     return "you may accept that it is present, but you reject what it claims or implies and resist changing your mind"
@@ -387,6 +402,8 @@ def pick_speaker(mode: str, cast: list[Character], history: list[Message], confi
         return cast[0] if not spoken else cast[(names.index(spoken[-1]) + 1) % len(cast)]
     if mode == "Random":
         return random.choice(candidates)
+    if len(candidates) == 1:
+        return candidates[0]
     # "Director": the model decides who would most naturally speak next
     answer = _ask_sync(
         "Director",
@@ -462,7 +479,7 @@ def next_turn(room: Room, cast: list[Character], convo: Conversation, mode: str,
         if history
         else f"The scene begins. You, {speaker.name}, speak first."
     )
-    firm = [w.name for w in convo.manifestations if w.active and w.conviction >= 85]
+    firm = [w.name for w in convo.manifestations if w.active and w.conviction >= FIRM_BELIEF]
     if firm:
         prompt += f" Remember the belief rule: {', '.join(firm)} is accepted as true; do not doubt it."
     if history and history[-1].kind == "manifest":

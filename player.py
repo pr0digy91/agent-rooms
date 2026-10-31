@@ -28,12 +28,10 @@ PLAYER_JS = """
     const md = navigator.mediaDevices;
     if (md && md.getUserMedia && !md.__arWrapped) {
       const orig = md.getUserMedia.bind(md);
-      w.__arMicLog = [];
       md.getUserMedia = (c) => {
         const id = saved("ar.mic");
         if (!id || !c || !c.audio) return orig(c);
         const withId = Object.assign({}, c, {audio: Object.assign({}, c.audio === true ? {} : c.audio, {deviceId: {exact: id}})});
-        w.__arMicLog.push(id);
         return orig(withId).catch((err) => {
           if (err && (err.name === "OverconstrainedError" || err.name === "NotFoundError")) return orig(c);
           throw err;

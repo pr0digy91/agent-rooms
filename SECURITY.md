@@ -22,18 +22,15 @@ key is sent only to `api.x.ai`, and is never stored in the database.
 Agent Rooms is a single-user local app. **It has no login.** Anyone who can open
 the page can read your conversations and spend your API credit.
 
-Streamlit listens on all network interfaces by default, so the app is reachable
-from your local network. To keep it on your own machine:
-
-```bash
-uv run streamlit run app.py --server.address localhost
-```
-
-Do not put it on the public internet without authentication in front of it.
+For that reason `.streamlit/config.toml` keeps it on `localhost`, so only your own
+machine can reach it. If you change `server.address`, anyone on that network gets
+that access too. Do not put it on the public internet without authentication in
+front of it.
 
 ## Your data
 
 Characters, rooms, settings, conversations and audio clips are stored unencrypted
 in `agent_rooms.db`, next to the code. The file is git-ignored. Conversation text
 is sent to xAI to generate replies, and spoken lines and mic audio are sent to
-xAI for speech. See xAI's terms for how that data is handled.
+xAI for speech. See xAI's terms for how that data is handled. The page also loads
+its font from Google Fonts, so your browser contacts Google when it opens.

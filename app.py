@@ -5,9 +5,9 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from player import device_picker, run_player
-from sim import (DELIVERY_STYLES, Character, Conversation, Message, Room, get_setting, list_conversations,
-                 load_clips, load_conversation, load_state, make_config, manifest, banish, MANIFEST_KINDS, next_turn, plan_delivery, save_conversation,
-                 save_state, set_setting)
+from sim import (DELIVERY_STYLES, MANIFEST_KINDS, VERSION, Character, Conversation, Message, Room, banish, get_setting,
+                 list_conversations, load_clips, load_conversation, load_state, make_config, manifest, next_turn,
+                 plan_delivery, safe_error, save_conversation, save_state, set_setting)
 from style import avatar_html, color_for, css
 from voice import VOICES, default_voice, speak, transcribe
 
@@ -42,7 +42,7 @@ for k, default in PREFS.items():  # a widget that lost its state must never fall
 head_l, head_r = st.columns([5, 1], vertical_alignment="center")
 head_l.markdown(
     '<div class="brand"><div class="logo">🎭</div><div><h1>Agent Rooms</h1>'
-    "<p>Characters and rooms that talk back. Powered by AG2 and Grok.</p></div></div>",
+    f"<p>Characters and rooms that talk back. Powered by AG2 and Grok. v{VERSION}</p></div></div>",
     unsafe_allow_html=True,
 )
 dark = head_r.toggle(":material/dark_mode: Dark mode", key="dark")
@@ -64,9 +64,12 @@ with tab_chars:
             persona = st.text_area("Persona (who they are)", height=80)
             behavior = st.text_area("Behaviour (how they act and talk)", height=80)
             if st.form_submit_button("Add character", type="primary") and name.strip():
-                state.characters.append(Character(name.strip(), persona, behavior, voice))
-                save_state(state)
-                st.rerun()
+                if name.strip() in [c.name for c in state.characters]:
+                    st.warning("There is already a character with that name.")
+                else:
+                    state.characters.append(Character(name.strip(), persona, behavior, voice))
+                    save_state(state)
+                    st.rerun()
     cols = st.columns(3)
     for i, c in enumerate(state.characters):
         with cols[i % 3], st.container(key=f"card_char_{i}"):
@@ -76,11 +79,11 @@ with tab_chars:
                 f'<div class="persona">{esc(c.persona) or "<i>No persona yet.</i>"}</div>',
                 unsafe_allow_html=True,
             )
-            with st.expander("Edit"):
-                c.persona = st.text_area("Persona", c.persona, key=f"cp{i}", height=80)
-                c.behavior = st.text_area("Behaviour", c.behavior, key=f"cb{i}", height=80)
+            with st.expander("Edit"):  # keyed by name: index keys hand a deleted card's text to the next one
+                c.persona = st.text_area("Persona", c.persona, key=f"cp_{c.name}", height=80)
+                c.behavior = st.text_area("Behaviour", c.behavior, key=f"cb_{c.name}", height=80)
                 c.voice = st.selectbox("Voice", VOICES, index=VOICES.index(c.voice) if c.voice in VOICES else 0,
-                                       key=f"cv{i}")
+                                       key=f"cv_{c.name}")
                 b1, b2 = st.columns(2)
                 if b1.button("Save", key=f"cs{i}", type="primary", use_container_width=True):
                     save_state(state)
@@ -98,9 +101,12 @@ with tab_rooms:
             desc = st.text_area("Environment / scenario", height=100)
             rules = st.text_area("Rules (optional)", height=60)
             if st.form_submit_button("Add room", type="primary") and rname.strip():
-                state.rooms.append(Room(rname.strip(), desc, rules))
-                save_state(state)
-                st.rerun()
+                if rname.strip() in [r.name for r in state.rooms]:
+                    st.warning("There is already a room with that name.")
+                else:
+                    state.rooms.append(Room(rname.strip(), desc, rules))
+                    save_state(state)
+                    st.rerun()
     cols = st.columns(3)
     for i, r in enumerate(state.rooms):
         with cols[i % 3], st.container(key=f"card_room_{i}"):
@@ -111,8 +117,8 @@ with tab_rooms:
                 unsafe_allow_html=True,
             )
             with st.expander("Edit"):
-                r.description = st.text_area("Environment", r.description, key=f"rd{i}", height=100)
-                r.rules = st.text_area("Rules", r.rules, key=f"rr{i}", height=60)
+                r.description = st.text_area("Environment", r.description, key=f"rd_{r.name}", height=100)
+                r.rules = st.text_area("Rules", r.rules, key=f"rr_{r.name}", height=60)
                 b1, b2 = st.columns(2)
                 if b1.button("Save", key=f"rs{i}", type="primary", use_container_width=True):
                     save_state(state)
@@ -140,6 +146,7 @@ def _do_manifest() -> None:
     ss = st.session_state
     name = (ss.get("m_name") or "").strip()
     if not name:
+        st.toast("Give it a name first.")
         return
     manifest(ss.convo, ss.m_kind, name, ss.get("m_desc") or "", ss.m_conviction)
     ss.pending_react = ss.m_react  # the room reacts after this run's layout is built
@@ -155,12 +162,13 @@ with tab_sim:
         st.info("You need at least one room and two characters.")
         st.stop()
     convo: Conversation = st.session_state.convo
-    clips: dict[int, bytes] = st.session_state.setdefault("clips", {})  # message index -> mp3 (this session only)
+    clips: dict[int, bytes] = st.session_state.setdefault("clips", {})  # message index -> mp3
     char_names = [c.name for c in state.characters]
     ss = st.session_state
     if ss.get("sim_room") not in [r.name for r in state.rooms]:
         ss.pop("sim_room", None)  # saved room was deleted
-    ss["sim_cast"] = [n for n in ss.get("sim_cast") or char_names[:3] if n in char_names] or char_names[:3]
+    chosen = ss.get("sim_cast")
+    ss["sim_cast"] = [n for n in (char_names[:3] if chosen is None else chosen) if n in char_names]
     player = state.player
 
     left, right = st.columns([1, 2.6], gap="large")
@@ -190,7 +198,7 @@ with tab_sim:
                            "truth; low = they doubt it, ask for proof and push back in their own way.")
             st.selectbox("How does the room respond?", REACTIONS, key="m_react")
             st.button(":material/auto_awesome: Manifest", type="primary", use_container_width=True,
-                      on_click=_do_manifest, disabled=not (st.session_state.get("m_name") or "").strip())
+                      on_click=_do_manifest)
             live = [(i, w) for i, w in enumerate(convo.manifestations) if w.active]
             if live:
                 st.markdown('<div class="section-label" style="margin-top:.9rem">In the scene</div>',
@@ -267,7 +275,7 @@ with tab_sim:
                 with st.spinner("Transcribing..."):
                     nudge = transcribe(submitted["audio"].getvalue())
             except Exception as e:
-                error_slot.error(f"Couldn't transcribe: {type(e).__name__}: {e}")
+                error_slot.error(f"Couldn't transcribe: {safe_error(e)}")
         if nudge:
             convo.history.append(Message(player.name, nudge))
             if auto:
@@ -337,9 +345,9 @@ with tab_sim:
                             slot.audio(mp3, format="audio/mpeg")  # manual player for replays
                             run_player(mp3)  # autoplay through the shared, queued player
                     except Exception as e:
-                        st.warning(f"Couldn't voice {msg.speaker}: {type(e).__name__}: {e}")
+                        st.warning(f"Couldn't voice {msg.speaker}: {safe_error(e)}")
             except Exception as e:
-                st.error(f"{type(e).__name__}: {e}")
+                st.error(safe_error(e))
 
         with st.expander(":material/psychology: Memory: summary and private notes"):
             st.markdown("**Story summary**")
@@ -350,12 +358,16 @@ with tab_sim:
 
         with st.expander(":material/save: Save / load conversation"):
             s1, s2 = st.columns(2)
+            saved = list_conversations()
             save_name = s1.text_input("Save as", value=convo.room and f"{convo.room} chat" or "my chat")
-            if s1.button("Save", type="primary") and convo.history:
+            replacing = save_name.strip() in saved
+            if replacing:
+                s1.caption("A saved conversation already has this name.")
+            if s1.button("Overwrite" if replacing else "Save", type="primary") and convo.history:
                 convo.room, convo.cast = room.name, names
                 save_conversation(save_name, convo, clips)
                 st.toast(f"Saved '{save_name}'")
-            saved = list_conversations()
+                saved = list_conversations()
             pick = s2.selectbox("Saved conversations", saved) if saved else None
             if pick:
                 s2.button("Load", on_click=_load_convo, args=(pick,))

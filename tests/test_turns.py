@@ -63,6 +63,13 @@ def test_director_is_shown_the_transcript(monkeypatch):
     assert "The relays are failing." in calls[0][2]
 
 
+def test_the_director_is_not_paid_to_choose_from_one_name(monkeypatch):
+    calls = capture(monkeypatch)
+    history = [sim.Message("Pip", "Anyone there?")]
+    assert sim.pick_speaker("Director", [VOSS], history, None).name == "Dr. Voss"
+    assert calls == []
+
+
 def test_candidates_limit_who_can_react(monkeypatch):
     capture(monkeypatch)
     convo = sim.Conversation()

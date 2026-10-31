@@ -9,13 +9,17 @@ license-files = ["LICENSE"]
 authors = [{ name = "garunya" }]
 keywords = ["ai", "agents", "simulation", "streamlit", "ag2", "grok", "xai", "voice", "roleplay"]
 classifiers = [
-    "Framework :: Streamlit",
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
-    "License :: OSI Approved :: MIT License",
+    "Topic :: Games/Entertainment :: Simulation",
 ]
 dependencies = [
     "ag2[openai]>=1.1.2",
+    "httpx>=0.28.1",
     "python-dotenv>=1.2.4",
     "streamlit>=1.66.0",
     "watchdog>=6.0.0",

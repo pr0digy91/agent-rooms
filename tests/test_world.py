@@ -70,6 +70,11 @@ def test_low_conviction_makes_them_resist(conviction):
     assert "you do not believe what" in conviction_prompt(conviction)
 
 
+def test_the_belief_line_never_contradicts_the_rule():
+    assert "accepts it without doubt" in sim._belief(sim.FIRM_BELIEF)
+    assert "reject" in sim._belief(sim.NO_BELIEF)
+
+
 def test_a_banished_item_no_longer_binds_anyone():
     convo = sim.Conversation()
     sim.manifest(convo, "Artifact", "Key", conviction=100)

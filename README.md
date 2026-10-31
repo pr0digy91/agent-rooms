@@ -20,7 +20,7 @@ A Streamlit app where AI characters live in customizable rooms and talk to each 
 - **Audio devices**: pick your microphone and headphones (headphone routing needs Chrome or Edge).
 - **Save and load**: conversations are stored with their memory, manifestations and audio clips.
 - **Dark and light themes**.
-- **Everything persists** in SQLite: characters, rooms, your player, settings and conversations.
+- **Stored locally** in SQLite: characters, rooms, your player and settings save automatically; conversations save when you press **Save**.
 
 ## Requirements
 
@@ -89,7 +89,7 @@ uv run streamlit run app.py
 
 Restart the server after pulling changes.
 
-The app has no login, and Streamlit listens on your local network by default. To keep it on your own machine, add `--server.address localhost`. See [SECURITY.md](SECURITY.md).
+The app has no login, so it only listens on `localhost` (set in `.streamlit/config.toml`). Read [SECURITY.md](SECURITY.md) before changing that.
 
 ## Using it
 
@@ -106,7 +106,6 @@ Every turn is a paid model call on your key. See [What costs money](#bring-your-
 | Path | What it is |
 |---|---|
 | `agent_rooms.db` | SQLite database holding all your data. Git-ignored; back it up if you care about it. |
-| `state.json` | Legacy file, imported once into the database. |
 | `app.py` | Streamlit UI |
 | `sim.py` | Storage, memory, speaker selection, manifestations and turn generation |
 | `voice.py` | xAI text-to-speech and speech-to-text |

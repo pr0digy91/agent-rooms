@@ -70,8 +70,60 @@ def test_manifesting_adds_a_world_card_with_its_conviction(app):
     assert app.text_input(key="m_name").value == ""
 
 
-def test_a_blank_name_cannot_be_manifested(app):
-    assert button(app, "Manifest").disabled
+def test_a_blank_name_manifests_nothing(app):
+    button(app, "Manifest").click().run()
+    assert not app.exception
+    assert app.session_state.convo.manifestations == []
+
+
+def test_the_manifest_button_is_ready_before_the_name_is_committed(app):
+    # A text box only commits when it loses focus, so a disabled button would swallow the first click.
+    assert not button(app, "Manifest").disabled
+
+
+def test_the_version_is_on_the_page(app):
+    assert any(f"v{sim.VERSION}" in m.value for m in app.markdown)
+
+
+def test_deleting_a_character_leaves_the_others_text_alone(app):
+    before = sim.load_state().characters
+    app.text_area(key="cp_Captain Mara").input("An edit that goes with her").run()
+    app.button(key="cd0").click().run()
+    app.button(key="cs0").click().run()
+    assert sim.load_state().characters == before[1:]
+
+
+def test_deleting_a_room_leaves_the_others_text_alone(app):
+    before = sim.load_state().rooms
+    app.text_area(key="rd_Starship Mess Hall").input("An edit that goes with it").run()
+    app.button(key="rx0").click().run()
+    app.button(key="rs0").click().run()
+    assert sim.load_state().rooms == before[1:]
+
+
+def test_a_character_name_cannot_be_used_twice(app):
+    next(t for t in app.text_input if t.label == "Name" and not t.key).input("Pip")
+    button(app, "Add character").click().run()
+    assert not app.exception
+    assert [c.name for c in app.session_state.state.characters].count("Pip") == 1
+    assert app.warning
+
+
+def test_a_room_name_cannot_be_used_twice(app):
+    next(t for t in app.text_input if t.label == "Room name").input("Rainy Cafe")
+    button(app, "Add room").click().run()
+    assert [r.name for r in app.session_state.state.rooms].count("Rainy Cafe") == 1
+    assert app.warning
+
+
+def test_the_cast_can_be_cleared(app):
+    app.multiselect(key="sim_cast").set_value([]).run()
+    assert app.multiselect(key="sim_cast").value == []
+
+
+def test_saving_over_an_existing_chat_says_so():
+    sim.save_conversation("my chat", sim.Conversation(history=[sim.Message("Pip", "Hi")]))
+    assert any(b.label == "Overwrite" for b in open_app().button)
 
 
 def test_banishing_shows_a_vanished_card(app):

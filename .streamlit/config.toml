@@ -5,3 +5,7 @@ font = "sans serif"
 
 [browser]
 gatherUsageStats = false
+
+[server]
+# There is no login, and the page spends its owner's API credit.
+address = "localhost"

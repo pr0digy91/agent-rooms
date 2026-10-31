@@ -8,6 +8,8 @@ A Streamlit app where AI characters live in customizable rooms and talk to each 
 
 **Bring your own key:** you need your own [xAI API key](https://console.x.ai) to run it.
 
+![Agent Rooms with a sample scene: three characters react to an artifact manifested into the Starship Mess Hall](docs/screenshot.png)
+
 ## Features
 
 - **Characters**: give each one a persona, a behaviour and a voice.

@@ -15,6 +15,7 @@ agent_rooms.db
 conversations/
 .playwright-mcp/
 *.png
+!docs/*.png
 *.db
 *.db-journal
 .DS_Store
